@@ -1,0 +1,33 @@
+# =============================================================================
+# Smart Water Billing System — Development Profile
+# Activated when: spring.profiles.active=dev (set in application.yml)
+# =============================================================================
+
+spring:
+  # ---------------------------------------------------------------------------
+  # JPA — verbose SQL logging and auto-schema update for development
+  # ---------------------------------------------------------------------------
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    # Show SQL statements
+    org.hibernate.SQL: DEBUG
+    # Show bind parameter values
+    org.hibernate.orm.jdbc.bind: TRACE
+    # Application debug logging
+    com.infosys.smartwater: DEBUG
+    # Spring Security debug (disable in prod — very verbose)
+    org.springframework.security: DEBUG
+    # Flyway migration logging
+    org.flywaydb: INFO

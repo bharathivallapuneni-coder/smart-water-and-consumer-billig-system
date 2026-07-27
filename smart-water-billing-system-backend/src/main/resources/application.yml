@@ -1,0 +1,131 @@
+# =============================================================================
+# Smart Water Usage and Consumer Billing System
+# Main Application Configuration
+# =============================================================================
+
+spring:
+  application:
+    name: smart-water-billing-system
+
+  # Active profile — overridden per environment (dev / prod)
+  profiles:
+    active: dev
+
+  # ---------------------------------------------------------------------------
+  # DataSource — PostgreSQL via HikariCP
+  # ---------------------------------------------------------------------------
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartwater_db
+    username: postgres
+    # YAML note: the '#' character starts a comment in YAML.
+    # Quoting the password avoids mis-parsing.
+    password: "#Kalai_Postgres@667"
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: SmartWaterHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000        # 10 minutes
+      max-lifetime: 1800000       # 30 minutes
+      connection-timeout: 30000   # 30 seconds
+      connection-test-query: SELECT 1
+
+  # ---------------------------------------------------------------------------
+  # JPA / Hibernate
+  # ---------------------------------------------------------------------------
+  jpa:
+    hibernate:
+      # 'validate' — Flyway owns DDL; Hibernate only validates the schema.
+      # Never use 'create' or 'create-drop' in production.
+      ddl-auto: validate
+    # SQL logging is OFF in base config; enabled in application-dev.yml
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        use_sql_comments: true
+        # Batch inserts/updates for improved throughput
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        # Timezone standardisation
+        jdbc.time_zone: UTC
+
+  # ---------------------------------------------------------------------------
+  # Flyway — Database Migration
+  # ---------------------------------------------------------------------------
+  flyway:
+    enabled: true
+    # Marks existing schema as baseline on first Flyway run (safe for existing DBs)
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    # Fail on checksum mismatch; prevents silent schema drift
+    validate-on-migrate: true
+    out-of-order: false
+    # All migration scripts must be under this schema
+    schemas: public
+
+  # ---------------------------------------------------------------------------
+  # Jackson — JSON serialisation configured via JacksonConfig.java
+  # ---------------------------------------------------------------------------
+  jackson:
+    default-property-inclusion: NON_NULL
+    time-zone: UTC
+
+# =============================================================================
+# Server
+# =============================================================================
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+# =============================================================================
+# SpringDoc / Swagger OpenAPI 3
+# =============================================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
+  packages-to-scan: com.infosys.smartwater.controller
+  show-actuator: false
+  info:
+    title: Smart Water Billing System API
+    description: >
+      Enterprise-grade REST API for Smart Water Usage tracking and Consumer
+      Billing management. Supports apartment/household management, daily water
+      meter readings, CSV imports, monthly billing cycles, and role-based access
+      control (ADMIN / RESIDENT).
+    version: 1.0.0
+    contact:
+      name: Infosys Smart Water Team
+      email: smartwater@infosys.com
+
+# =============================================================================
+# Application-level custom properties
+# =============================================================================
+application:
+  jwt:
+    # ⚠️  CHANGE THIS SECRET IN PRODUCTION.
+    # Must be a Base64-encoded string of at least 256 bits (32 bytes).
+    # Generate with: openssl rand -base64 64
+    secret: dGhpc0lzQVZlcnlMb25nQW5kU2VjdXJlU2VjcmV0S2V5Rm9yU21hcnRXYXRlckJpbGxpbmdTeXN0ZW0hQDIwMjY=
+    # Access token validity: 24 hours (milliseconds)
+    expiration: 86400000
+    # Refresh token validity: 7 days (milliseconds)
+    refresh-expiration: 604800000
+    token-prefix: "Bearer "
+    header-name: "Authorization"
