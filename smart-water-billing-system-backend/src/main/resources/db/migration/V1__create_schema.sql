@@ -7,6 +7,9 @@
 -- Created     : 2026-01-01
 -- =============================================================================
 
+-- Required by the UUID primary-key defaults used throughout this schema.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- =============================================================================
 -- TABLE: apartments
 -- Description: Physical apartment buildings managed by the system.

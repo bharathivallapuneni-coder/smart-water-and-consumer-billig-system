@@ -88,6 +88,13 @@ public class Apartment extends BaseEntity {
     @Builder.Default
     private Integer totalHouseholds = 0;
 
+    /**
+     * Building owner user linked to this apartment.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "building_owner_id")
+    private User buildingOwner;
+
     // -------------------------------------------------------------------------
     // Relationships
     // -------------------------------------------------------------------------

@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Droplets, LogOut, Menu, X, Bell } from 'lucide-react'
+import { Droplets, LogOut, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from './NotificationBell'
 
 export default function DashboardShell({ navItems, roleLabel, children }) {
   const { user, logout } = useAuth()
@@ -59,10 +60,7 @@ export default function DashboardShell({ navItems, roleLabel, children }) {
             <p className="font-display text-sm font-semibold text-ink">{user?.name || user?.buildingName}</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative rounded-full border border-ink-100 p-2 text-slate hover:text-flow-700">
-              <Bell size={16} />
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-coral" />
-            </button>
+            <NotificationBell forRole={user?.role} forId={user?.id || user?.buildingId} />
             <div className="hidden h-9 w-9 place-items-center rounded-full bg-flow-100 font-mono text-xs font-semibold text-flow-700 sm:grid">
               {(user?.name || 'U').slice(0, 1).toUpperCase()}
             </div>

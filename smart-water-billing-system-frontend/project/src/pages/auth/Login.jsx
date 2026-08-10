@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Droplets, ShieldCheck, Building2, Users, Eye, EyeOff } from 'lucide-react'
+import { Droplets, ShieldCheck, Building2, Users, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import RippleButton from '../../components/RippleButton'
 import { Field, inputClass } from '../../components/UiBits'
+import ForgotPasswordModal from '../../components/ForgotPasswordModal'
 
 const roles = [
   { key: 'SUPER_ADMIN', label: 'Super Admin', icon: ShieldCheck, home: '/super-admin' },
@@ -19,6 +20,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -115,6 +117,16 @@ export default function Login() {
               </div>
             </Field>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(true)}
+                className="text-xs font-semibold text-flow-700 hover:underline flex items-center gap-1"
+              >
+                <KeyRound size={12} /> Forgot Password?
+              </button>
+            </div>
+
             <RippleButton type="submit" disabled={busy} className="w-full">
               {busy ? 'Signing in…' : 'Log in'}
             </RippleButton>
@@ -129,7 +141,11 @@ export default function Login() {
             </p>
           )}
 
-          
+          <ForgotPasswordModal
+            isOpen={isForgotOpen}
+            onClose={() => setIsForgotOpen(false)}
+            defaultRole={role}
+          />
         </motion.div>
       </div>
     </div>

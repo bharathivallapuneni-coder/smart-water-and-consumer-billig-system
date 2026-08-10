@@ -19,7 +19,7 @@ spring:
     username: postgres
     # YAML note: the '#' character starts a comment in YAML.
     # Quoting the password avoids mis-parsing.
-    password: "#Kalai_Postgres@667"
+    password: "1623"
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: SmartWaterHikariPool

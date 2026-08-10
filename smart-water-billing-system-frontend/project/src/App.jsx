@@ -14,6 +14,9 @@ import ApprovedBuildings from './pages/superadmin/ApprovedBuildings'
 import OwnerLayout from './pages/owner/OwnerLayout'
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerProfile from './pages/owner/Profile'
+import TariffConfig from './pages/owner/TariffConfig'
+import BulkWaterPurchases from './pages/owner/BulkWaterPurchases'
+import BillingCycleManager from './pages/owner/BillingCycleManager'
 import Residents from './pages/owner/Residents'
 import MeterEntry from './pages/owner/MeterEntry'
 import BillGeneration from './pages/owner/BillGeneration'
@@ -58,6 +61,9 @@ export default function App() {
       >
         <Route index element={<OwnerDashboard />} />
         <Route path="profile" element={<OwnerProfile />} />
+        <Route path="tariffs" element={<TariffConfig buildingId="bld_1002" />} />
+        <Route path="water-purchases" element={<BulkWaterPurchases buildingId="bld_1002" />} />
+        <Route path="billing-cycles" element={<BillingCycleManager buildingId="bld_1002" />} />
         <Route path="residents" element={<Residents />} />
         <Route path="meter-entry" element={<MeterEntry />} />
         <Route path="bills" element={<BillGeneration />} />

@@ -15,7 +15,8 @@ const empty = {
   phone: '',
   email: '',
   username: '',
-  password: ''
+  password: '',
+  confirmPassword: ''
 }
 
 export default function OwnerRegister() {
@@ -30,6 +31,10 @@ export default function OwnerRegister() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (form.password !== form.confirmPassword) {
+      toast.error('Password and Confirm Password do not match!')
+      return
+    }
     setBusy(true)
     try {
       await registerBuildingOwner(form)
@@ -105,6 +110,9 @@ export default function OwnerRegister() {
             </Field>
             <Field label="Choose a password">
               <input required type="password" className={inputClass} value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="••••••••" />
+            </Field>
+            <Field label="Confirm password" className="sm:col-span-2">
+              <input required type="password" className={inputClass} value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)} placeholder="Re-enter password" />
             </Field>
 
             <RippleButton type="submit" disabled={busy} className="sm:col-span-2">

@@ -61,6 +61,10 @@ public class UserRegistrationRequest {
     )
     private String password;
 
+    @Schema(description = "Confirmation password matching main password",
+            example = "SecurePass@123")
+    private String confirmPassword;
+
     @Schema(description = "Contact phone number (optional, 10–15 digits)",
             example = "+919876543210")
     @Pattern(

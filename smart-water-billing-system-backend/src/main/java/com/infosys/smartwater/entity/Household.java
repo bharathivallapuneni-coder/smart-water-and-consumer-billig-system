@@ -92,6 +92,27 @@ public class Household extends BaseEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    /**
+     * Flat area in sq ft or sq m used for fallback water cost distribution.
+     */
+    @Column(name = "flat_area", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal flatArea = new java.math.BigDecimal("1000.00");
+
+    /**
+     * Flag indicating if the household has an active meter installed.
+     */
+    @Column(name = "is_metered", nullable = false)
+    @Builder.Default
+    private Boolean isMetered = true;
+
+    /**
+     * Configurable alert threshold in kL for high usage alerts.
+     */
+    @Column(name = "alert_threshold_kl", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private java.math.BigDecimal alertThresholdKl = new java.math.BigDecimal("20.00");
+
     // -------------------------------------------------------------------------
     // Relationships
     // -------------------------------------------------------------------------
