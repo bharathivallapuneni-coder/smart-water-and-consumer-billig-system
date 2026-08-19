@@ -13,24 +13,30 @@ export default function PaymentHistory() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchResidentBills(user.id).then((b) => {
-      setBills(b.filter((x) => x.status === 'PAID'))
+    fetchResidentBills(user?.id).then((b) => {
+      const list = Array.isArray(b) ? b : []
+      setBills(list.filter((x) => x?.status === 'PAID'))
+      setLoading(false)
+    }).catch(() => {
+      setBills([])
       setLoading(false)
     })
-  }, [user.id])
+  }, [user?.id])
 
   if (loading) return <Loader label="Loading payment history" />
+
+  const safeBills = Array.isArray(bills) ? bills : []
 
   return (
     <div>
       <PageHeader eyebrow="Transactions" title="Payment history" subtitle="Every successful payment, with a downloadable receipt." />
 
-      {bills.length === 0 ? (
+      {safeBills.length === 0 ? (
         <EmptyState icon={Wallet} title="No payments yet" subtitle="Paid bills will show up here." />
       ) : (
         <Panel className="!p-0">
           <div className="divide-y divide-ink-100/70">
-            {bills.map((b) => (
+            {safeBills.map((b) => (
               <div key={b.id} className="flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-display text-sm font-semibold text-ink">{b.month} {b.year}</p>

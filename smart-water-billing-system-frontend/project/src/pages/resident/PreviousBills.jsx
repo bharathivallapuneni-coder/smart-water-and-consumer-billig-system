@@ -12,24 +12,29 @@ export default function PreviousBills() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchResidentBills(user.id).then((b) => {
-      setBills(b)
+    fetchResidentBills(user?.id).then((b) => {
+      setBills(Array.isArray(b) ? b : [])
+      setLoading(false)
+    }).catch(() => {
+      setBills([])
       setLoading(false)
     })
-  }, [user.id])
+  }, [user?.id])
 
   if (loading) return <Loader label="Loading bill history" />
+
+  const safeBills = Array.isArray(bills) ? bills : []
 
   return (
     <div>
       <PageHeader eyebrow="Records" title="Previous bills" subtitle="Every bill generated for your flat, oldest to newest." />
 
-      {bills.length === 0 ? (
+      {safeBills.length === 0 ? (
         <EmptyState icon={Receipt} title="No bills yet" subtitle="Bills will appear here once your owner generates one." />
       ) : (
         <Panel className="!p-0">
           <div className="divide-y divide-ink-100/70">
-            {bills.map((b) => (
+            {safeBills.map((b) => (
               <div key={b.id} className="flex items-center justify-between p-5">
                 <div>
                   <p className="font-display text-sm font-semibold text-ink">{b.month} {b.year}</p>

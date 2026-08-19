@@ -57,6 +57,20 @@ public class InvoiceController {
         return ResponseEntity.ok(ApiResponse.success("Household invoices retrieved successfully", invoices, HttpStatus.OK.value()));
     }
 
+    @GetMapping("/apartment/{apartmentId}")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'BUILDING_OWNER', 'ADMIN')")
+    @Operation(summary = "Get invoices for an apartment building [BUILDING_OWNER / SUPERADMIN]")
+    public ResponseEntity<ApiResponse<List<HouseholdInvoice>>> getApartmentInvoices(
+            @PathVariable UUID apartmentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        List<HouseholdInvoice> invoices = invoiceRepository
+                .findByApartmentIdOrderByGeneratedAtDesc(apartmentId, PageRequest.of(page, size))
+                .getContent();
+        return ResponseEntity.ok(ApiResponse.success("Apartment invoices retrieved successfully", invoices, HttpStatus.OK.value()));
+    }
+
     @GetMapping("/cycle/{cycleId}")
     @PreAuthorize("hasAnyRole('SUPERADMIN', 'BUILDING_OWNER', 'ADMIN')")
     @Operation(summary = "Get all household invoices generated for a billing cycle")

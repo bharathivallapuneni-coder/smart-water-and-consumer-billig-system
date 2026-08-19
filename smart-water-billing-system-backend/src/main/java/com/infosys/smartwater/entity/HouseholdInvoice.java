@@ -1,5 +1,6 @@
 package com.infosys.smartwater.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,20 +35,24 @@ public class HouseholdInvoice extends BaseEntity {
     @Column(name = "invoice_number", nullable = false, unique = true, length = 50)
     private String invoiceNumber;
 
+    @JsonIgnore
     @NotNull(message = "Billing cycle is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "billing_cycle_id", nullable = false)
     private BillingCycle billingCycle;
 
+    @JsonIgnore
     @NotNull(message = "Household is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "household_id", nullable = false)
     private Household household;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resident_id")
     private User resident;
 
+    @JsonIgnore
     @NotNull(message = "Apartment is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "apartment_id", nullable = false)

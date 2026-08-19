@@ -256,6 +256,7 @@ export default function BulkWaterPurchases({ buildingId }) {
                   onChange={(e) => setSourceType(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
                 >
+                  <option value="TANKER">TANKER</option>
                   <option value="Tanker Delivery">Tanker Delivery</option>
                   <option value="Municipal Supply">Municipal Supply</option>
                   <option value="Borewell/Other">Borewell / Other</option>

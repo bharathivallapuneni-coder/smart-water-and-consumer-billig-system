@@ -18,15 +18,22 @@ export default function CurrentBill() {
 
   async function load() {
     setLoading(true)
-    setBills(await fetchResidentBills(user.id))
-    setLoading(false)
+    try {
+      const res = await fetchResidentBills(user?.id)
+      setBills(Array.isArray(res) ? res : [])
+    } catch (e) {
+      setBills([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
     load()
-  }, [user.id])
+  }, [user?.id])
 
-  const pending = bills.filter((b) => b.status === 'PENDING')
+  const safeBills = Array.isArray(bills) ? bills : []
+  const pending = safeBills.filter((b) => b?.status === 'PENDING')
 
   async function handlePay(bill) {
     setPayingId(bill.id)

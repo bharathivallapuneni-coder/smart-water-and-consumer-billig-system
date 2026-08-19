@@ -23,8 +23,20 @@ function pushNotification(db, { forRole, forId, title, message, notificationType
 // ---------------------------------------------------------------------------
 export async function loginRequest({ role, username, password }) {
   if (!USE_MOCK) {
-    const { data } = await api.post('/auth/login', { role, username, password })
-    return data
+    const { data: res } = await api.post('/auth/login', { email: username, username, password, role })
+    const authData = res.data || res
+    return {
+      token: authData.accessToken,
+      user: {
+        id: authData.userId,
+        username: authData.username,
+        email: authData.email,
+        role: authData.role,
+        name: authData.username,
+        buildingName: authData.role === 'BUILDING_OWNER' ? 'Building Owner Account' : undefined,
+        flatNumber: authData.role === 'RESIDENT' ? 'Resident Account' : undefined
+      }
+    }
   }
   await delay()
   const db = loadDb()
@@ -155,13 +167,33 @@ export async function changePassword({ userId, currentPassword, newPassword, con
   throw new Error('User not found')
 }
 
+export async function getActiveBuildingId(passedId) {
+  if (!USE_MOCK) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (passedId && uuidRegex.test(passedId)) {
+      return passedId
+    }
+    try {
+      const buildings = await fetchBuildings()
+      if (buildings && buildings.length > 0) {
+        return buildings[0].id
+      }
+    } catch (e) {
+      // Fallback if fetchBuildings fails
+    }
+  }
+  return passedId || 'bld_1002'
+}
+
 // ---------------------------------------------------------------------------
 // TIERED TARIFF CONFIGURATION
 // ---------------------------------------------------------------------------
 export async function fetchBuildingTariff(buildingId) {
   if (!USE_MOCK) {
-    const { data } = await api.get(`/tariffs/building/${buildingId}`)
-    return data
+    const activeId = await getActiveBuildingId(buildingId)
+    const { data: res } = await api.get(`/tariffs/building/${activeId}`)
+    const items = res?.data !== undefined ? res.data : res
+    return Array.isArray(items) ? items : []
   }
   await delay()
   const db = loadDb()
@@ -174,8 +206,9 @@ export async function fetchBuildingTariff(buildingId) {
 
 export async function saveBuildingTariff(buildingId, tiers) {
   if (!USE_MOCK) {
-    const { data } = await api.post(`/tariffs/building/${buildingId}`, tiers)
-    return data
+    const activeId = await getActiveBuildingId(buildingId)
+    const { data: res } = await api.post(`/tariffs/building/${activeId}`, tiers)
+    return res?.data !== undefined ? res.data : res
   }
   await delay()
   const db = loadDb()
@@ -195,8 +228,10 @@ export async function saveBuildingTariff(buildingId, tiers) {
 // ---------------------------------------------------------------------------
 export async function fetchBulkPurchases(buildingId) {
   if (!USE_MOCK) {
-    const { data } = await api.get(`/bulk-purchases/building/${buildingId}`)
-    return data
+    const activeId = await getActiveBuildingId(buildingId)
+    const { data: res } = await api.get(`/bulk-purchases/building/${activeId}`)
+    const items = res?.data !== undefined ? res.data : res
+    return Array.isArray(items) ? items : []
   }
   await delay()
   return loadDb().bulkPurchases.filter((p) => p.buildingId === buildingId)
@@ -204,8 +239,18 @@ export async function fetchBulkPurchases(buildingId) {
 
 export async function createBulkPurchase(payload) {
   if (!USE_MOCK) {
-    const { data } = await api.post('/bulk-purchases', payload)
-    return data
+    const apartmentId = await getActiveBuildingId(payload.buildingId || payload.apartmentId)
+    const dto = {
+      apartmentId,
+      sourceType: payload.sourceType || 'TANKER',
+      supplierName: payload.supplierName || 'Aqua Pure Tankers',
+      purchaseDate: payload.purchaseDate || new Date().toISOString().split('T')[0],
+      purchasedVolumeKl: Number(payload.purchasedVolumeKl),
+      totalCost: Number(payload.totalCost),
+      notes: payload.notes || ''
+    }
+    const { data: res } = await api.post('/bulk-purchases', dto)
+    return res?.data !== undefined ? res.data : res
   }
   await delay()
   const db = loadDb()
@@ -225,8 +270,18 @@ export async function createBulkPurchase(payload) {
 
 export async function updateBulkPurchase(id, payload) {
   if (!USE_MOCK) {
-    const { data } = await api.put(`/bulk-purchases/${id}`, payload)
-    return data
+    const apartmentId = await getActiveBuildingId(payload.buildingId || payload.apartmentId)
+    const dto = {
+      apartmentId,
+      sourceType: payload.sourceType || 'TANKER',
+      supplierName: payload.supplierName || 'Aqua Pure Tankers',
+      purchaseDate: payload.purchaseDate || new Date().toISOString().split('T')[0],
+      purchasedVolumeKl: Number(payload.purchasedVolumeKl),
+      totalCost: Number(payload.totalCost),
+      notes: payload.notes || ''
+    }
+    const { data: res } = await api.put(`/bulk-purchases/${id}`, dto)
+    return res?.data !== undefined ? res.data : res
   }
   await delay()
   const db = loadDb()
@@ -258,8 +313,20 @@ export async function deleteBulkPurchase(id) {
 // ---------------------------------------------------------------------------
 export async function fetchBuildingCycles(buildingId) {
   if (!USE_MOCK) {
-    const { data } = await api.get(`/billing-cycles/household/${buildingId}`)
-    return data
+    const activeId = await getActiveBuildingId(buildingId)
+    const { data: res } = await api.get('/billing-cycles')
+    const paged = res?.data !== undefined ? res.data : res
+    const items = Array.isArray(paged?.content) ? paged.content : (Array.isArray(paged) ? paged : [])
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    return items.map(c => ({
+      id: c.id,
+      buildingId: activeId,
+      month: typeof c.billingMonth === 'number' ? monthNames[c.billingMonth - 1] : (c.month || 'August'),
+      year: c.billingYear || c.year || 2026,
+      status: c.status || c.billingStatus || 'OPEN',
+      openedAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
+      finalizedAt: c.paidDate ? new Date(c.paidDate).getTime() : (c.updatedAt ? new Date(c.updatedAt).getTime() : null)
+    }))
   }
   await delay()
   return loadDb().billingCycles.filter((c) => c.buildingId === buildingId)
@@ -267,8 +334,41 @@ export async function fetchBuildingCycles(buildingId) {
 
 export async function openBillingCycle(buildingId, { month, year }) {
   if (!USE_MOCK) {
-    const { data } = await api.post('/billing-cycles/generate', { apartmentId: buildingId, billingMonth: month, billingYear: year })
-    return data
+    const activeId = await getActiveBuildingId(buildingId)
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const mIdx = typeof month === 'number' ? month : (monthNames.indexOf(month) + 1 || 8)
+
+    let householdId = null
+    try {
+      const { data: res } = await api.get(`/households/apartment/${activeId}`)
+      const items = Array.isArray(res?.data?.content) ? res.data.content : (Array.isArray(res?.data) ? res.data : [])
+      if (items.length > 0) householdId = items[0].id
+    } catch (e) {
+      // Fallback
+    }
+
+    if (!householdId) {
+      try {
+        const { data: res } = await api.get('/households')
+        const items = Array.isArray(res?.data?.content) ? res.data.content : (Array.isArray(res?.data) ? res.data : [])
+        if (items.length > 0) householdId = items[0].id
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    if (!householdId) {
+      throw new Error('No active household found to generate a billing cycle.')
+    }
+
+    const dto = {
+      householdId,
+      billingMonth: mIdx,
+      billingYear: Number(year) || 2026,
+      dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }
+    const { data: result } = await api.post('/billing-cycles/generate', dto)
+    return result?.data !== undefined ? result.data : result
   }
   await delay()
   const db = loadDb()
@@ -291,8 +391,11 @@ export async function openBillingCycle(buildingId, { month, year }) {
 
 export async function finalizeBillingCycle(buildingId, cycleId) {
   if (!USE_MOCK) {
-    const { data } = await api.post(`/billing-cycles/${cycleId}/finalize`)
-    return data
+    const { data: res } = await api.patch(`/billing-cycles/${cycleId}/status`, {
+      status: 'PAID',
+      paidDate: new Date().toISOString().split('T')[0]
+    })
+    return res?.data !== undefined ? res.data : res
   }
   await delay()
   const db = loadDb()
@@ -406,8 +509,13 @@ export async function finalizeBillingCycle(buildingId, cycleId) {
 // ---------------------------------------------------------------------------
 export async function fetchResidentInvoices(residentId) {
   if (!USE_MOCK) {
-    const { data } = await api.get('/invoices/resident')
-    return data
+    try {
+      const { data: res } = await api.get('/invoices/resident')
+      const items = res?.data !== undefined ? res.data : res
+      return Array.isArray(items) ? items : []
+    } catch (e) {
+      return []
+    }
   }
   await delay()
   return loadDb().invoices.filter((i) => i.residentId === residentId)
@@ -429,47 +537,270 @@ export async function payInvoice(invoiceId, paymentRef) {
   return inv
 }
 
+export async function fetchResidentAlerts(unreadOnly = false, severity = null) {
+  if (!USE_MOCK) {
+    try {
+      const params = {}
+      if (unreadOnly) params.unreadOnly = true
+      if (severity) params.severity = severity
+      const { data } = await api.get('/resident/alerts', { params })
+      return Array.isArray(data) ? data : []
+    } catch (e) {
+      return []
+    }
+  }
+  await delay()
+  let list = loadDb().notifications || []
+  if (unreadOnly) list = list.filter((n) => !n.isRead && !n.read)
+  if (severity) list = list.filter((n) => n.severity === severity)
+  return list
+}
+
+export async function fetchUnreadAlertCount() {
+  if (!USE_MOCK) {
+    try {
+      const { data } = await api.get('/resident/alerts/count')
+      return data?.unreadCount || 0
+    } catch (e) {
+      return 0
+    }
+  }
+  await delay()
+  const list = loadDb().notifications || []
+  return list.filter((n) => !n.isRead && !n.read).length
+}
+
+export async function markAlertRead(id) {
+  if (!USE_MOCK) {
+    const { data } = await api.patch(`/resident/alerts/${id}/read`)
+    return data
+  }
+  await delay()
+  const db = loadDb()
+  const item = db.notifications.find((n) => n.id === id)
+  if (item) {
+    item.isRead = true
+    item.read = true
+    saveDb(db)
+  }
+  return item
+}
+
+export async function resolveAlert(id) {
+  if (!USE_MOCK) {
+    const { data } = await api.patch(`/resident/alerts/${id}/resolve`)
+    return data
+  }
+  await delay()
+  const db = loadDb()
+  const item = db.notifications.find((n) => n.id === id)
+  if (item) {
+    item.isRead = true
+    item.read = true
+    item.isResolved = true
+    item.resolvedAt = Date.now()
+    saveDb(db)
+  }
+  return item
+}
+
 export async function fetchNotifications(forRole, forId) {
   if (!USE_MOCK) {
-    const { data } = await api.get('/notifications')
-    return data
+    try {
+      const { data } = await api.get('/notifications')
+      const items = data?.data !== undefined ? data.data : data
+      return Array.isArray(items) ? items : []
+    } catch (e) {
+      return []
+    }
   }
   await delay()
   return loadDb().notifications.filter((n) => n.forRole === forRole && n.forId === forId)
 }
 
 export async function markNotificationAsRead(id) {
-  if (!USE_MOCK) {
-    const { data } = await api.patch(`/notifications/${id}/read`)
-    return data
-  }
-  await delay()
-  const db = loadDb()
-  const n = db.notifications.find((x) => x.id === id)
-  if (n) n.read = true
-  saveDb(db)
-  return true
+  return markAlertRead(id)
 }
 
 // Keep existing exports for backward compatibility
-export async function fetchBuildings() { return loadDb().buildings }
+export async function fetchBuildings() {
+  if (!USE_MOCK) {
+    try {
+      const { data: res } = await api.get('/apartments')
+      const paged = res.data || res
+      const items = Array.isArray(paged?.content) ? paged.content : (Array.isArray(paged) ? paged : [])
+      return items.map(b => ({
+        id: b.id,
+        buildingName: b.name || b.buildingName || `Building ${b.apartmentNumber || ''}`,
+        ownerName: b.ownerName || 'Building Owner',
+        location: b.address || b.location || 'Location',
+        status: b.status || 'APPROVED',
+        createdAt: b.createdAt || Date.now()
+      }))
+    } catch (e) {
+      return []
+    }
+  }
+  return loadDb().buildings
+}
+
 export async function decideBuildingRequest(id, decision) {
+  if (!USE_MOCK) {
+    const endpoint = decision === 'APPROVED' ? `/admin/approve-owner/${id}` : `/admin/reject-owner/${id}`
+    const { data: res } = await api.patch(endpoint)
+    return res.data || res
+  }
   const db = loadDb()
   const b = db.buildings.find((x) => x.id === id)
   if (b) { b.status = decision; saveDb(db) }
   return b
 }
+
 export async function fetchAdminStats() {
+  if (!USE_MOCK) {
+    try {
+      const [pendingRes, aptsRes] = await Promise.all([
+        api.get('/admin/pending-owners').catch(() => ({ data: { data: { totalElements: 0 } } })),
+        api.get('/apartments').catch(() => ({ data: { data: { totalElements: 0, content: [] } } }))
+      ])
+      const pendingData = pendingRes.data?.data
+      const aptsData = aptsRes.data?.data
+      const pendingCount = pendingData?.totalElements ?? 0
+      const approvedCount = aptsData?.totalElements ?? 0
+      return {
+        pending: pendingCount,
+        approved: approvedCount,
+        totalBuildings: pendingCount + approvedCount,
+        totalResidents: 0
+      }
+    } catch (e) {
+      return { pending: 0, approved: 0, totalBuildings: 0, totalResidents: 0 }
+    }
+  }
   const db = loadDb()
   return { pending: db.buildings.filter(b => b.status === 'PENDING').length, approved: db.buildings.filter(b => b.status === 'APPROVED').length, totalBuildings: db.buildings.length, totalResidents: db.residents.length }
 }
-export async function fetchResidents(buildingId) { return loadDb().residents.filter(r => r.buildingId === buildingId) }
+
+export async function fetchResidents(buildingId) {
+  if (!USE_MOCK) {
+    try {
+      const { data: res } = await api.get(`/households/apartment/${buildingId}`)
+      const paged = res.data || res
+      return Array.isArray(paged?.content) ? paged.content : (Array.isArray(paged) ? paged : [])
+    } catch (e) {
+      return []
+    }
+  }
+  return loadDb().residents.filter(r => r.buildingId === buildingId)
+}
+
 export async function createResident(buildingId, payload) {
+  if (!USE_MOCK) {
+    const { data: res } = await api.post('/auth/resident/invite', {
+      fullName: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      flatNumber: payload.flatNumber,
+      blockNumber: payload.blockNumber,
+      buildingId
+    })
+    return res.data || res
+  }
+  await delay()
   const db = loadDb()
-  const record = { id: uid('res'), buildingId, invitationStatus: 'ACCEPTED', createdAt: Date.now(), flatArea: 1000, isMetered: true, ...payload }
-  db.residents.unshift(record)
+  const tokenString = 'tok_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  const tokenRecord = {
+    id: uid('tok'),
+    token: tokenString,
+    fullName: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    flatNumber: payload.flatNumber,
+    blockNumber: payload.blockNumber,
+    buildingId: buildingId || 'bld_1002',
+    buildingName: 'Green Valley Apartments',
+    expiryDate: Date.now() + 1000 * 60 * 60 * 48,
+    isUsed: false
+  }
+  if (!db.invitationTokens) db.invitationTokens = []
+  db.invitationTokens.unshift(tokenRecord)
+
+  const residentRecord = {
+    id: uid('res'),
+    buildingId,
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    flatNumber: payload.flatNumber,
+    blockNumber: payload.blockNumber,
+    invitationStatus: 'PENDING',
+    createdAt: Date.now(),
+    flatArea: 1000,
+    isMetered: true
+  }
+  db.residents.unshift(residentRecord)
   saveDb(db)
-  return record
+
+  const inviteUrl = `${window.location.origin}/resident/activate?token=${tokenString}`
+  console.log(`[HYDROBILL INVITATION SENT] Email: ${payload.email}, URL: ${inviteUrl}`)
+  return { resident: residentRecord, token: tokenRecord, inviteUrl }
+}
+
+export async function validateInvitationToken(token) {
+  if (!USE_MOCK) {
+    try {
+      const { data: res } = await api.get('/auth/resident/validate-token', { params: { token } })
+      return res.data || res
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Invalid or expired invitation link')
+    }
+  }
+  await delay()
+  const db = loadDb()
+  const tok = (db.invitationTokens || []).find((t) => t.token === token)
+  if (!tok) throw new Error('Invalid invitation link.')
+  if (tok.isUsed) throw new Error('This invitation link has already been used.')
+  if (Date.now() > tok.expiryDate) throw new Error('This invitation link has expired.')
+  return {
+    token: tok.token,
+    fullName: tok.fullName,
+    email: tok.email,
+    flatNumber: tok.flatNumber,
+    blockNumber: tok.blockNumber,
+    buildingName: tok.buildingName || 'HydroBill Property',
+    isValid: true
+  }
+}
+
+export async function activateResidentAccount(payload) {
+  if (!USE_MOCK) {
+    const { data: res } = await api.post('/auth/resident/activate', payload)
+    return res.data || res
+  }
+  await delay()
+  const db = loadDb()
+  const tok = (db.invitationTokens || []).find((t) => t.token === payload.token)
+  if (!tok) throw new Error('Invalid or expired invitation link')
+  if (tok.isUsed) throw new Error('This invitation link has already been used')
+  if (Date.now() > tok.expiryDate) throw new Error('This invitation link has expired')
+
+  // Check username uniqueness
+  const existingRes = db.residents.find((r) => r.username?.toLowerCase() === payload.username?.toLowerCase())
+  if (existingRes) throw new Error(`Username '${payload.username}' is already taken. Please choose another.`)
+
+  tok.isUsed = true
+
+  let res = db.residents.find((r) => r.email?.toLowerCase() === tok.email?.toLowerCase() || (r.flatNumber === tok.flatNumber && r.blockNumber === tok.blockNumber))
+  if (!res) {
+    res = { id: uid('res'), buildingId: tok.buildingId, name: tok.fullName, email: tok.email, phone: tok.phone, flatNumber: tok.flatNumber, blockNumber: tok.blockNumber }
+    db.residents.unshift(res)
+  }
+  res.username = payload.username
+  res.password = payload.password
+  res.invitationStatus = 'ACCEPTED'
+
+  saveDb(db)
+  return { success: true, message: 'Account created successfully. Please log in using your new credentials.' }
 }
 export async function updateResident(buildingId, residentId, payload) {
   const db = loadDb()
@@ -503,7 +834,50 @@ export async function generateBill(buildingId, meterReadingId) {
 export async function markBillPaid(billId, paymentRef) {
   return payInvoice(billId, paymentRef)
 }
-export async function fetchMeterReadings(buildingId) { return loadDb().meterReadings.filter(m => m.buildingId === buildingId) }
-export async function fetchBillsForBuilding(buildingId) { return loadDb().invoices.filter(i => i.buildingId === buildingId) }
-export async function fetchResidentReadings(residentId) { return loadDb().meterReadings.filter(m => m.residentId === residentId) }
+export async function fetchMeterReadings(buildingId) {
+  if (!USE_MOCK) return []
+  return loadDb().meterReadings.filter(m => m.buildingId === buildingId)
+}
+export async function fetchBillsForBuilding(buildingId) {
+  if (!USE_MOCK) {
+    const activeId = await getActiveBuildingId(buildingId)
+    const { data: res } = await api.get(`/invoices/apartment/${activeId}`)
+    const items = res?.data !== undefined ? res.data : res
+    const list = Array.isArray(items) ? items : []
+    return list.map(inv => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      flatNumber: inv.householdNumber || inv.invoiceNumber?.split('-').pop() || 'Flat',
+      residentName: inv.residentName || 'Resident',
+      billingPeriod: inv.billingPeriod,
+      meteredConsumptionKl: inv.meteredConsumptionKl,
+      flatAreaSqft: inv.flatAreaSqft,
+      isMetered: inv.isMetered,
+      baseTieredCharge: inv.baseTieredCharge,
+      allocatedWaterProcurementCharge: inv.allocatedWaterProcurementCharge,
+      sharedAreaCharge: inv.sharedAreaCharge,
+      adjustments: inv.adjustments,
+      totalAmount: inv.totalAmount,
+      status: inv.status,
+      generatedAt: inv.generatedAt,
+      dueDate: inv.dueDate
+    }))
+  }
+  return loadDb().invoices.filter(i => i.buildingId === buildingId)
+}
+export async function fetchResidentReadings(residentId) {
+  if (!USE_MOCK) {
+    try {
+      const { data: res } = await api.get(`/water-usage/household/${residentId}`).catch(() => null)
+      if (res) {
+        const items = res?.data?.content || res?.data || res
+        return Array.isArray(items) ? items : []
+      }
+      return []
+    } catch (e) {
+      return []
+    }
+  }
+  return loadDb().meterReadings.filter(m => m.residentId === residentId)
+}
 export async function fetchResidentBills(residentId) { return fetchResidentInvoices(residentId) }

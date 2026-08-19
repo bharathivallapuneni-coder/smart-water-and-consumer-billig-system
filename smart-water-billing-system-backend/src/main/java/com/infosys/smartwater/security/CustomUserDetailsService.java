@@ -55,15 +55,16 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        log.debug("Loading user by email: {}", email);
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        log.debug("Loading user by email or username: {}", identifier);
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.warn("Authentication attempt with unknown email: {}", email);
-                    return new UsernameNotFoundException(
-                            "User not found with email: " + email);
-                });
+        User user = userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                        .orElseThrow(() -> {
+                            log.warn("Authentication attempt with unknown email/username: {}", identifier);
+                            return new UsernameNotFoundException(
+                                    "User not found with email or username: " + identifier);
+                        }));
 
         return buildUserDetails(user);
     }

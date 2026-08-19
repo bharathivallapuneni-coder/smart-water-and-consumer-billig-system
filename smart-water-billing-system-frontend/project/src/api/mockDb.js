@@ -7,6 +7,21 @@ const DB_KEY = 'awb_db_v2'
 
 const seed = () => ({
   superAdmin: { username: 'admin', password: 'admin@123', email: 'admin@hydrobill.com' },
+  invitationTokens: [
+    {
+      id: 'tok_demo',
+      token: 'demo-invitation-token-123',
+      fullName: 'Priya Sharma',
+      email: 'priya@gmail.com',
+      phone: '9876543210',
+      flatNumber: 'A-103',
+      blockNumber: 'A',
+      buildingId: 'bld_1002',
+      buildingName: 'Green Valley Apartments',
+      expiryDate: Date.now() + 1000 * 60 * 60 * 48,
+      isUsed: false
+    }
+  ],
   buildings: [
     {
       id: 'bld_1001',
@@ -178,21 +193,53 @@ const seed = () => ({
       id: 'ntf_6001',
       forRole: 'RESIDENT',
       forId: 'res_2001',
-      title: 'High Water Usage Alert',
-      message: 'High Water Usage Alert\nYour water consumption for the current billing cycle has reached 22 kL, exceeding your configured threshold of 20 kL.',
-      notificationType: 'HIGH_USAGE',
-      createdAt: Date.now() - 1000 * 60 * 60 * 4,
-      read: false
+      alertType: 'HIGH_CONSUMPTION',
+      severity: 'WARNING',
+      title: '⚠ HIGH WATER CONSUMPTION',
+      message: 'Your current water consumption is 18.5 kL. You are currently in the Medium Consumption tier (11–25 kL). Please monitor your water usage.',
+      notificationType: 'HIGH_CONSUMPTION',
+      tariffTier: 'Medium Consumption Tier (11–25 kL)',
+      currentConsumption: 18.5,
+      averageConsumption: 14.2,
+      standardDeviation: 2.1,
+      createdAt: Date.now() - 1000 * 60 * 60 * 2,
+      isRead: false,
+      isResolved: false
     },
     {
       id: 'ntf_6002',
       forRole: 'RESIDENT',
       forId: 'res_2001',
-      title: 'Potential Water Leak Warning',
-      message: 'Anomalous Water Usage Detected!\nYour current consumption of 22 kL exceeds your historical average (15 kL ± 2.5 kL). Potential leak detected at flat A-101.',
-      notificationType: 'LEAK_ALERT',
-      createdAt: Date.now() - 1000 * 60 * 60 * 2,
-      read: false
+      alertType: 'POSSIBLE_WATER_LEAK',
+      severity: 'CRITICAL',
+      title: '🚨 POSSIBLE WATER LEAK DETECTED',
+      message: '🚨 Possible Water Leak Detected\n\nYour current water consumption (38.0 kL) is significantly higher than your normal household usage (Average: 17.0 kL).\n\nPlease check your taps, pipes, tanks, and other water connections for possible leakage.',
+      notificationType: 'POSSIBLE_WATER_LEAK',
+      tariffTier: 'High Consumption Tier (26+ kL)',
+      currentConsumption: 38.0,
+      averageConsumption: 17.0,
+      standardDeviation: 3.5,
+      createdAt: Date.now() - 1000 * 60 * 60 * 12,
+      isRead: false,
+      isResolved: false
+    },
+    {
+      id: 'ntf_6003',
+      forRole: 'RESIDENT',
+      forId: 'res_2001',
+      alertType: 'CRITICAL_HIGH_CONSUMPTION',
+      severity: 'CRITICAL',
+      title: '⚠ CRITICAL HIGH CONSUMPTION',
+      message: 'Your current water consumption is 30.0 kL. You have entered the High Consumption tier (26+ kL). Please reduce usage to prevent high charges.',
+      notificationType: 'CRITICAL_HIGH_CONSUMPTION',
+      tariffTier: 'High Consumption Tier (26+ kL)',
+      currentConsumption: 30.0,
+      averageConsumption: 16.5,
+      standardDeviation: 2.8,
+      createdAt: Date.now() - 1000 * 60 * 60 * 48,
+      isRead: true,
+      isResolved: true,
+      resolvedAt: Date.now() - 1000 * 60 * 60 * 24
     }
   ],
   resetTokens: []

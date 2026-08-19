@@ -94,10 +94,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        log.info("Authentication attempt for email: '{}'", request.getEmail());
+        log.info("Authentication attempt for email/username: '{}'", request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new InvalidOperationException("Invalid email or password"));
+                .orElseGet(() -> userRepository.findByUsername(request.getEmail())
+                        .orElseThrow(() -> new InvalidOperationException("Invalid email or password")));
 
         if (user.getApprovalStatus() == ApprovalStatus.PENDING) {
             throw new InvalidOperationException("Your Building Owner registration application is pending approval by Superadmin.");
@@ -113,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword())
             );
         } catch (BadCredentialsException e) {
             throw new InvalidOperationException("Invalid email or password");

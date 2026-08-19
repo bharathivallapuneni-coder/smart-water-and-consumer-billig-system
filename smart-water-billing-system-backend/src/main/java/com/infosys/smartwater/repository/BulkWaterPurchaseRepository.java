@@ -15,9 +15,9 @@ public interface BulkWaterPurchaseRepository extends JpaRepository<BulkWaterPurc
     List<BulkWaterPurchase> findByApartmentIdOrderByPurchaseDateDesc(UUID apartmentId);
     List<BulkWaterPurchase> findByApartmentIdAndBillingCycleId(UUID apartmentId, UUID billingCycleId);
 
-    @Query("SELECT COALESCE(SUM(b.purchasedVolumeKl), 0) FROM BulkWaterPurchase b WHERE b.apartmentId = :apartmentId AND b.billingCycle.id = :cycleId")
+    @Query("SELECT COALESCE(SUM(b.purchasedVolumeKl), 0) FROM BulkWaterPurchase b WHERE b.apartment.id = :apartmentId AND b.billingCycle.id = :cycleId")
     BigDecimal sumVolumeByApartmentAndCycle(@Param("apartmentId") UUID apartmentId, @Param("cycleId") UUID cycleId);
 
-    @Query("SELECT COALESCE(SUM(b.totalCost), 0) FROM BulkWaterPurchase b WHERE b.apartmentId = :apartmentId AND b.billingCycle.id = :cycleId")
+    @Query("SELECT COALESCE(SUM(b.totalCost), 0) FROM BulkWaterPurchase b WHERE b.apartment.id = :apartmentId AND b.billingCycle.id = :cycleId")
     BigDecimal sumCostByApartmentAndCycle(@Param("apartmentId") UUID apartmentId, @Param("cycleId") UUID cycleId);
 }

@@ -7,12 +7,12 @@ import com.infosys.smartwater.repository.WaterUsageRepository;
 import com.infosys.smartwater.service.AlertEngineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring @Scheduled component evaluating household water usage periodically.
@@ -28,23 +28,25 @@ public class WaterAlertScheduler {
 
     /**
      * Periodically evaluate active household consumption.
-     * Fixed delay: 1 hour (3600000 ms), initial delay: 30 seconds.
+     * Schedule configured via application properties (default: fixed delay 1 hour).
      */
-    @Scheduled(fixedDelay = 3600000, initialDelay = 30000)
+    @Scheduled(fixedDelayString = "${application.alerts.fixed-delay:3600000}", initialDelay = 30000)
     public void runPeriodicConsumptionEvaluation() {
         log.info("Starting scheduled household water consumption & leak alert evaluation...");
-        List<Household> activeHouseholds = householdRepository.findByIsActiveTrue();
+        List<Household> activeHouseholds = householdRepository.findAll().stream()
+                .filter(h -> Boolean.TRUE.equals(h.getIsActive()))
+                .toList();
 
         for (Household household : activeHouseholds) {
             try {
                 // Fetch latest meter reading for household
-                List<WaterUsage> usages = waterUsageRepository
-                        .findByHouseholdIdOrderByReadingDateDesc(household.getId(), PageRequest.of(0, 1))
-                        .getContent();
+                Optional<WaterUsage> latestOpt = waterUsageRepository.findLatestByHouseholdId(household.getId());
 
-                if (!usages.isEmpty()) {
-                    BigDecimal latestUnits = usages.get(0).getUnitsConsumed();
-                    alertEngineService.evaluateHouseholdConsumption(household, latestUnits);
+                if (latestOpt.isPresent()) {
+                    WaterUsage latestReading = latestOpt.get();
+                    BigDecimal latestUnits = latestReading.getUnitsConsumed();
+
+                    alertEngineService.evaluateHouseholdConsumption(household, latestUnits, null);
                 }
             } catch (Exception e) {
                 log.error("Error evaluating alerts for household ID {}: {}", household.getId(), e.getMessage());

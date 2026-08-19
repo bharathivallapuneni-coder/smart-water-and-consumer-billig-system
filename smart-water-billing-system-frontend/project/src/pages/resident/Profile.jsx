@@ -7,9 +7,9 @@ import Panel from '../../components/Panel'
 export default function Profile() {
   const { user } = useAuth()
   const rows = [
-    { icon: User, label: 'Resident name', value: user.name },
-    { icon: Home, label: 'Flat number', value: user.flatNumber },
-    { icon: Building2, label: 'Building', value: user.buildingName }
+    { icon: User, label: 'Resident name', value: user?.name || user?.username || 'Resident' },
+    { icon: Home, label: 'Flat number', value: user?.flatNumber || 'Resident Household' },
+    { icon: Building2, label: 'Building', value: user?.buildingName || 'HydroBill Building' }
   ]
 
   return (

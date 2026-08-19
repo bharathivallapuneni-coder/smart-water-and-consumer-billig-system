@@ -32,6 +32,8 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
      */
     Optional<Apartment> findByApartmentNumber(String apartmentNumber);
 
+    Optional<Apartment> findByBuildingOwnerId(UUID buildingOwnerId);
+
     /**
      * Checks whether an apartment with the given number already exists.
      * Used during create/update to enforce uniqueness without loading the entity.

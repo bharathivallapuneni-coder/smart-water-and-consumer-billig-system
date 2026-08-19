@@ -3,28 +3,32 @@ package com.infosys.smartwater.controller;
 import com.infosys.smartwater.dto.request.*;
 import com.infosys.smartwater.dto.response.ApiResponse;
 import com.infosys.smartwater.dto.response.AuthResponse;
+import com.infosys.smartwater.dto.response.InvitationValidateResponse;
 import com.infosys.smartwater.dto.response.UserResponse;
 import com.infosys.smartwater.service.AuthService;
 import com.infosys.smartwater.service.PasswordResetService;
+import com.infosys.smartwater.service.ResidentInvitationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Authentication REST Controller providing User Registration, Login, Profile, and Password Reset endpoints.
+ * Authentication REST Controller providing User Registration, Login, Profile, Password Reset, and Resident Invitation endpoints.
  */
 @RestController
 @RequestMapping({"/api/v1/auth", "/api/auth"})
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Endpoints for user registration, authentication (JWT), password reset, and user context")
+@Tag(name = "Authentication", description = "Endpoints for user registration, authentication (JWT), password reset, and resident invitation onboarding")
 public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final ResidentInvitationService residentInvitationService;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user account (Resident / Admin)")
@@ -76,5 +80,35 @@ public class AuthController {
         UserResponse currentUser = authService.getCurrentUser();
         passwordResetService.changePassword(currentUser.getId(), request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success("Password changed successfully", HttpStatus.OK.value()));
+    }
+
+    // -------------------------------------------------------------------------
+    // RESIDENT INVITATION & ACTIVATION ENDPOINTS
+    // -------------------------------------------------------------------------
+
+    @PostMapping("/resident/invite")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'BUILDING_OWNER', 'ADMIN')")
+    @Operation(summary = "Create resident record and send invitation token email [BUILDING_OWNER / SUPERADMIN]")
+    public ResponseEntity<ApiResponse<String>> inviteResident(@Valid @RequestBody InviteResidentRequest request) {
+        UserResponse currentUser = authService.getCurrentUser();
+        String msg = residentInvitationService.inviteResident(currentUser.getId(), request);
+        return new ResponseEntity<>(ApiResponse.success(msg, msg, HttpStatus.CREATED.value()), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/resident/validate-token")
+    @Operation(summary = "Validate single-use invitation token for resident account creation")
+    public ResponseEntity<ApiResponse<InvitationValidateResponse>> validateInvitationToken(@RequestParam String token) {
+        InvitationValidateResponse response = residentInvitationService.validateToken(token);
+        if (!Boolean.TRUE.equals(response.getIsValid())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(response.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+        return ResponseEntity.ok(ApiResponse.success("Invitation token validated successfully", response, HttpStatus.OK.value()));
+    }
+
+    @PostMapping("/resident/activate")
+    @Operation(summary = "Create username and password to activate resident account via invitation token")
+    public ResponseEntity<ApiResponse<Void>> activateResidentAccount(@Valid @RequestBody ActivateResidentRequest request) {
+        residentInvitationService.activateAccount(request);
+        return ResponseEntity.ok(ApiResponse.success("Account created successfully. Please log in using your new credentials.", HttpStatus.OK.value()));
     }
 }

@@ -16,24 +16,33 @@ export default function Overview() {
 
   useEffect(() => {
     Promise.all([fetchAdminStats(), fetchBuildings()]).then(([s, b]) => {
-      setStats(s)
-      setBuildings(b)
-      setRecent(b.slice(0, 5))
+      const list = Array.isArray(b) ? b : []
+      setStats(s || { pending: 0, approved: 0, totalBuildings: 0, totalResidents: 0 })
+      setBuildings(list)
+      setRecent(list.slice(0, 5))
+      setLoading(false)
+    }).catch(() => {
+      setStats({ pending: 0, approved: 0, totalBuildings: 0, totalResidents: 0 })
+      setBuildings([])
+      setRecent([])
       setLoading(false)
     })
   }, [])
 
-  if (loading) return <Loader label="Loading overview" />
+  if (loading || !stats) return <Loader label="Loading overview" />
 
-  const approvalRate = stats.totalBuildings ? Math.round((stats.approved / stats.totalBuildings) * 100) : 0
-  const residentsPerBuilding = stats.totalBuildings ? (stats.totalResidents / stats.totalBuildings).toFixed(1) : '0.0'
+  const safeBuildings = Array.isArray(buildings) ? buildings : []
+  const safeRecent = Array.isArray(recent) ? recent : []
+
+  const approvalRate = stats.totalBuildings ? Math.round(((stats.approved || 0) / stats.totalBuildings) * 100) : 0
+  const residentsPerBuilding = stats.totalBuildings ? ((stats.totalResidents || 0) / stats.totalBuildings).toFixed(1) : '0.0'
   const chartData = Array.from({ length: 6 }, (_, index) => {
     const date = new Date()
     date.setMonth(date.getMonth() - (5 - index))
 
-    const approvedCount = buildings.filter((building) => {
+    const approvedCount = safeBuildings.filter((building) => {
       if (building.status !== 'APPROVED') return false
-      const createdAt = new Date(building.createdAt)
+      const createdAt = new Date(building.createdAt || Date.now())
       return createdAt.getMonth() === date.getMonth() && createdAt.getFullYear() === date.getFullYear()
     }).length
 

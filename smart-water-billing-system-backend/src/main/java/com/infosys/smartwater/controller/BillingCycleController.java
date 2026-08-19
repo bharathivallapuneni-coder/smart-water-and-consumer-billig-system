@@ -28,7 +28,7 @@ public class BillingCycleController {
 
     private final BillingCycleService billingCycleService;
 
-    @PostMapping("/generate")
+    @PostMapping({"", "/generate"})
     @PreAuthorize("hasAnyRole('SUPERADMIN', 'BUILDING_OWNER', 'ADMIN')")
     @Operation(summary = "Generate a monthly billing cycle for a household [BUILDING_OWNER / SUPERADMIN]")
     public ResponseEntity<ApiResponse<BillingCycleResponse>> generateBillingCycle(@Valid @RequestBody BillingCycleRequest request) {

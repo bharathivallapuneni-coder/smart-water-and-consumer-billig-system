@@ -25,28 +25,38 @@ export default function ResidentDashboard() {
 
   useEffect(() => {
     loadDashboardData()
-  }, [user.id])
+  }, [user?.id])
 
   const loadDashboardData = async () => {
     try {
+      const userId = user?.id || ''
       const [b, r, n] = await Promise.all([
-        fetchResidentBills(user.id),
-        fetchResidentReadings(user.id),
-        fetchNotifications('RESIDENT', user.id)
+        fetchResidentBills(userId),
+        fetchResidentReadings(userId),
+        fetchNotifications('RESIDENT', userId)
       ])
-      setBills(b || [])
-      setReadings(r || [])
-      setAlerts((n || []).filter((item) => item.notificationType === 'LEAK_ALERT' || item.notificationType === 'HIGH_USAGE'))
+      const safeB = Array.isArray(b) ? b : []
+      const safeR = Array.isArray(r) ? r : []
+      const safeN = Array.isArray(n) ? n : []
+      setBills(safeB)
+      setReadings(safeR)
+      setAlerts(safeN.filter((item) => item?.notificationType === 'LEAK_ALERT' || item?.notificationType === 'HIGH_USAGE'))
       setLoading(false)
     } catch (e) {
+      setBills([])
+      setReadings([])
+      setAlerts([])
       setLoading(false)
     }
   }
 
   if (loading) return <Loader label="Loading your dashboard" />
 
-  const currentInvoice = bills.find((b) => b.status === 'PENDING') || bills[0]
-  const latestReading = readings[0]
+  const safeBills = Array.isArray(bills) ? bills : []
+  const safeReadings = Array.isArray(readings) ? readings : []
+
+  const currentInvoice = safeBills.find((b) => b?.status === 'PENDING') || safeBills[0]
+  const latestReading = safeReadings[0]
 
   const handleOpenInvoice = (inv) => {
     setSelectedInvoice(inv)
@@ -56,7 +66,11 @@ export default function ResidentDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeader eyebrow={`Flat ${user.flatNumber}`} title={`Hi ${user.name.split(' ')[0]}`} subtitle={user.buildingName} />
+        <PageHeader
+          eyebrow={`Flat ${user?.flatNumber || ''}`}
+          title={`Hi ${(user?.name || user?.username || 'Resident').split(' ')[0]}`}
+          subtitle={user?.buildingName || 'HydroBill Consumer'}
+        />
         <button
           onClick={() => setIsPasswordModalOpen(true)}
           className="px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0 self-start sm:self-auto"

@@ -1,21 +1,22 @@
 package com.infosys.smartwater.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Request DTO for user login ({@code POST /api/auth/login}).
  *
- * <p>Authenticates the user by email and password.
+ * <p>Authenticates the user by email or username and password.
  * On success, the endpoint returns an {@code AuthResponse} containing
  * the JWT access token, user details, and token expiry.
  */
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,15 +24,31 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @Schema(description = "Registered email address used for login",
-            example = "rajesh@example.com",
-            requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email must be a valid email address")
+            example = "superadmin@smartwater.com")
     private String email;
 
+    @Schema(description = "Registered username used for login",
+            example = "super admin")
+    private String username;
+
     @Schema(description = "Account password",
-            example = "SecurePass@123",
+            example = "admin123",
             requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "Password is required")
     private String password;
+
+    public String getEmail() {
+        if (email != null && !email.isBlank()) {
+            return email;
+        }
+        return username;
+    }
+
+    public String getUsername() {
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        return email;
+    }
 }
+

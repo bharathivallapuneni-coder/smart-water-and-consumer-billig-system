@@ -3,7 +3,7 @@ package com.infosys.smartwater.service;
 import com.infosys.smartwater.entity.Apartment;
 import com.infosys.smartwater.entity.BillingCycle;
 import com.infosys.smartwater.entity.BulkWaterPurchase;
-import com.infosys.smartwater.exception.BusinessException;
+import com.infosys.smartwater.exception.InvalidOperationException;
 import com.infosys.smartwater.exception.ResourceNotFoundException;
 import com.infosys.smartwater.repository.ApartmentRepository;
 import com.infosys.smartwater.repository.BillingCycleRepository;
@@ -41,10 +41,10 @@ public class BulkWaterPurchaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Apartment", "id", apartmentId));
 
         if (volumeKl == null || volumeKl.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("Purchased volume must be greater than zero");
+            throw new InvalidOperationException("Purchased volume must be greater than zero");
         }
         if (totalCost == null || totalCost.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("Total cost cannot be negative");
+            throw new InvalidOperationException("Total cost cannot be negative");
         }
 
         BigDecimal unitCost = totalCost.divide(volumeKl, 2, RoundingMode.HALF_UP);

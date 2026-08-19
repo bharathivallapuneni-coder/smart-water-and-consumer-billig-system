@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Landing from './pages/Landing'
 import Login from './pages/auth/Login'
 import OwnerRegister from './pages/auth/OwnerRegister'
+import ActivateAccount from './pages/auth/ActivateAccount'
 
 import SuperAdminLayout from './pages/superadmin/SuperAdminLayout'
 import Overview from './pages/superadmin/Overview'
@@ -25,6 +26,7 @@ import Reports from './pages/owner/Reports'
 
 import ResidentLayout from './pages/resident/ResidentLayout'
 import ResidentDashboard from './pages/resident/ResidentDashboard'
+import ResidentAlerts from './pages/resident/ResidentAlerts'
 import ResidentProfile from './pages/resident/Profile'
 import MeterReading from './pages/resident/MeterReading'
 import CurrentBill from './pages/resident/CurrentBill'
@@ -37,11 +39,12 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<OwnerRegister />} />
+      <Route path="/resident/activate" element={<ActivateAccount />} />
 
       <Route
         path="/super-admin"
         element={
-          <ProtectedRoute allow={['SUPER_ADMIN']}>
+          <ProtectedRoute allow={['SUPER_ADMIN', 'SUPERADMIN']}>
             <SuperAdminLayout />
           </ProtectedRoute>
         }
@@ -60,13 +63,16 @@ export default function App() {
         }
       >
         <Route index element={<OwnerDashboard />} />
+        <Route path="dashboard" element={<OwnerDashboard />} />
         <Route path="profile" element={<OwnerProfile />} />
         <Route path="tariffs" element={<TariffConfig buildingId="bld_1002" />} />
         <Route path="water-purchases" element={<BulkWaterPurchases buildingId="bld_1002" />} />
         <Route path="billing-cycles" element={<BillingCycleManager buildingId="bld_1002" />} />
         <Route path="residents" element={<Residents />} />
         <Route path="meter-entry" element={<MeterEntry />} />
+        <Route path="bill-generation" element={<BillGeneration />} />
         <Route path="bills" element={<BillGeneration />} />
+        <Route path="payment-status" element={<PaymentStatus />} />
         <Route path="payments" element={<PaymentStatus />} />
         <Route path="reports" element={<Reports />} />
       </Route>
@@ -80,6 +86,7 @@ export default function App() {
         }
       >
         <Route index element={<ResidentDashboard />} />
+        <Route path="alerts" element={<ResidentAlerts />} />
         <Route path="profile" element={<ResidentProfile />} />
         <Route path="meter" element={<MeterReading />} />
         <Route path="bill" element={<CurrentBill />} />

@@ -1,5 +1,6 @@
 package com.infosys.smartwater.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,11 +28,13 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = false)
 public class BulkWaterPurchase extends BaseEntity {
 
+    @JsonIgnore
     @NotNull(message = "Apartment is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "billing_cycle_id")
     private BillingCycle billingCycle;

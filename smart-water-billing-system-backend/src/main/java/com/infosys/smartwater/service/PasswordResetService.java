@@ -2,7 +2,7 @@ package com.infosys.smartwater.service;
 
 import com.infosys.smartwater.entity.PasswordResetToken;
 import com.infosys.smartwater.entity.User;
-import com.infosys.smartwater.exception.BusinessException;
+import com.infosys.smartwater.exception.InvalidOperationException;
 import com.infosys.smartwater.exception.ResourceNotFoundException;
 import com.infosys.smartwater.repository.PasswordResetTokenRepository;
 import com.infosys.smartwater.repository.UserRepository;
@@ -28,20 +28,22 @@ public class PasswordResetService {
     @Transactional
     public String requestPasswordReset(String email) {
         if (email == null || email.isBlank()) {
-            throw new BusinessException("Email address is required");
+            throw new InvalidOperationException("Email address is required");
         }
 
         User user = userRepository.findByEmail(email.toLowerCase().trim()).orElse(null);
+
         if (user == null) {
-            // Do not reveal whether account exists
             return "If an account with that email exists, password reset instructions have been sent.";
         }
 
-        // Delete any existing tokens for this user
         tokenRepository.deleteByUserId(user.getId());
 
-        // Generate 6-digit OTP code / token
-        String resetToken = String.format("%06d", (int)(Math.random() * 900000) + 100000);
+        String resetToken = String.format(
+                "%06d",
+                (int) (Math.random() * 900000) + 100000
+        );
+
         PasswordResetToken tokenEntity = PasswordResetToken.builder()
                 .user(user)
                 .token(resetToken)
@@ -52,62 +54,96 @@ public class PasswordResetService {
         tokenRepository.save(tokenEntity);
 
         String subject = "HydroBill — Password Reset OTP";
+
         String body = String.format(
-                "Hello %s,\n\nYour password reset OTP is: %s\n\nThis token will expire in 15 minutes. If you did not request a password reset, please ignore this email.",
-                user.getUsername(), resetToken
+                "Hello %s,\n\nYour password reset OTP is: %s\n\n"
+                        + "This token will expire in 15 minutes. "
+                        + "If you did not request a password reset, please ignore this email.",
+                user.getUsername(),
+                resetToken
         );
 
-        emailService.sendEmailAlert(user.getEmail(), subject, body);
+        emailService.sendEmailAlert(
+                user.getEmail(),
+                subject,
+                body
+        );
 
         return "Password reset token sent to registered email if account exists.";
     }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
+
         if (token == null || token.isBlank()) {
-            throw new BusinessException("Reset token is required");
-        }
-        if (newPassword == null || newPassword.length() < 6) {
-            throw new BusinessException("New password must be at least 6 characters long");
+            throw new InvalidOperationException("Reset token is required");
         }
 
-        PasswordResetToken resetToken = tokenRepository.findByToken(token.trim())
-                .orElseThrow(() -> new BusinessException("Invalid or expired reset token"));
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new InvalidOperationException(
+                    "New password must be at least 6 characters long"
+            );
+        }
+
+        PasswordResetToken resetToken = tokenRepository
+                .findByToken(token.trim())
+                .orElseThrow(() ->
+                        new InvalidOperationException("Invalid or expired reset token")
+                );
 
         if (Boolean.TRUE.equals(resetToken.getIsUsed())) {
-            throw new BusinessException("Reset token has already been used");
+            throw new InvalidOperationException("Reset token has already been used");
         }
 
         if (resetToken.isExpired()) {
-            throw new BusinessException("Reset token has expired");
+            throw new InvalidOperationException("Reset token has expired");
         }
 
         User user = resetToken.getUser();
+
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
         resetToken.setIsUsed(true);
         tokenRepository.save(resetToken);
 
-        log.info("Password successfully reset for user: {}", user.getEmail());
+        log.info(
+                "Password successfully reset for user: {}",
+                user.getEmail()
+        );
     }
 
     @Transactional
-    public void changePassword(UUID userId, String currentPassword, String newPassword) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+    public void changePassword(
+            UUID userId,
+            String currentPassword,
+            String newPassword
+    ) {
 
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new BusinessException("Invalid current password");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User", "id", userId)
+                );
+
+        if (!passwordEncoder.matches(
+                currentPassword,
+                user.getPassword()
+        )) {
+            throw new InvalidOperationException("Invalid current password");
         }
 
         if (newPassword == null || newPassword.length() < 6) {
-            throw new BusinessException("New password must be at least 6 characters long");
+            throw new InvalidOperationException(
+                    "New password must be at least 6 characters long"
+            );
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        log.info("User {} successfully changed their password", user.getUsername());
+        log.info(
+                "User {} successfully changed their password",
+                user.getUsername()
+        );
     }
 }

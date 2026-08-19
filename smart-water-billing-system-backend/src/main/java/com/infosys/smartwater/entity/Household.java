@@ -84,6 +84,13 @@ public class Household extends BaseEntity {
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;
 
+    @Column(name = "block_number", length = 50)
+    private String blockNumber;
+
+    @Column(name = "invitation_status", nullable = false, length = 20)
+    @Builder.Default
+    private String invitationStatus = "PENDING";
+
     /**
      * Whether this household is currently active.
      * Inactive households are skipped during billing cycle generation.

@@ -1,5 +1,6 @@
 package com.infosys.smartwater.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = false)
 public class TariffTier extends BaseEntity {
 
+    @JsonIgnore
     @NotNull(message = "Apartment is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "apartment_id", nullable = false)

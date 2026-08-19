@@ -35,9 +35,8 @@ spring:
   # ---------------------------------------------------------------------------
   jpa:
     hibernate:
-      # 'validate' — Flyway owns DDL; Hibernate only validates the schema.
-      # Never use 'create' or 'create-drop' in production.
-      ddl-auto: validate
+      # 'update' — Allows Hibernate & Flyway to add missing columns/tables automatically.
+      ddl-auto: update
     # SQL logging is OFF in base config; enabled in application-dev.yml
     show-sql: false
     open-in-view: false
@@ -75,6 +74,26 @@ spring:
   jackson:
     default-property-inclusion: NON_NULL
     time-zone: UTC
+
+  # ---------------------------------------------------------------------------
+  # Spring Mail — SMTP Configuration (Gmail / Custom SMTP)
+  # Configured via environment variables with safe defaults
+  # ---------------------------------------------------------------------------
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED:true}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # =============================================================================
 # Server
